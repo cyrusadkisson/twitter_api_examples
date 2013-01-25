@@ -44,11 +44,12 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class SampleTwitterRequests {
+// REQUIRED LIBRARIES
+// Apache commons codec
+// Apache HTTP Core
+// JSON
 
-	/**
-	 * @param args
-	 */
+public class SampleTwitterRequests {
 	
 	private String twitter_consumer_key = "YOURCONSUMERKEY";
 	private String twitter_consumer_secret = "YOURCONSUMERSECRET";	
@@ -293,6 +294,14 @@ public class SampleTwitterRequests {
 		return jsonresponse;
 	}
 	
+	// once you've got the generic request token, send the user to the authorization page. They grant access and either
+	// a) are shown a pin number 
+	// b) sent to the callback url with information
+	// In either case, turn the authorization code into a twitter access token for that user. 
+	
+	// My example here is uses a pin and oauth_token (from the previous request token call)
+	// INPUT: pin, generic request token
+	// OUTPUT: if successful, twitter API will return access_token, access_token_secret, screen_name and user_id
 	
 	public JSONObject getTwitterAccessTokenFromAuthorizationCode(String pin, String oauth_token)
 	{
@@ -464,279 +473,287 @@ public class SampleTwitterRequests {
 		 return jsonresponse;
 	}
 
-public JSONObject searchTweets(String q, String access_token, String access_token_secret)
-{
-	JSONObject jsonresponse = new JSONObject();
-	
-	String oauth_token = access_token;
-	String oauth_token_secret = access_token_secret;
+	// This is the search example, using a GET call
+	// INPUT: the search query (q), the user's access_token and the user's access_token_secret
+	// OUTPUT: if successful, twitter API will return a json object of tweets
+		
+	public JSONObject searchTweets(String q, String access_token, String access_token_secret)
+	{
+		JSONObject jsonresponse = new JSONObject();
+		
+		String oauth_token = access_token;
+		String oauth_token_secret = access_token_secret;
 
-	// generate authorization header
-	String get_or_post = "GET";
-	String oauth_signature_method = "HMAC-SHA1";
-	
-	String uuid_string = UUID.randomUUID().toString();
-	uuid_string = uuid_string.replaceAll("-", "");
-	String oauth_nonce = uuid_string; // any relatively random alphanumeric string will work here
-	
-	// get the timestamp
-	Calendar tempcal = Calendar.getInstance();
-	long ts = tempcal.getTimeInMillis();// get current time in milliseconds
-	String oauth_timestamp = (new Long(ts/1000)).toString(); // then divide by 1000 to get seconds
+		// generate authorization header
+		String get_or_post = "GET";
+		String oauth_signature_method = "HMAC-SHA1";
+		
+		String uuid_string = UUID.randomUUID().toString();
+		uuid_string = uuid_string.replaceAll("-", "");
+		String oauth_nonce = uuid_string; // any relatively random alphanumeric string will work here
+		
+		// get the timestamp
+		Calendar tempcal = Calendar.getInstance();
+		long ts = tempcal.getTimeInMillis();// get current time in milliseconds
+		String oauth_timestamp = (new Long(ts/1000)).toString(); // then divide by 1000 to get seconds
 
-	// the parameter string must be in alphabetical order
-	// this time, I add 3 extra params to the request, "lang", "result_type" and "q".
-	String parameter_string = "lang=en&oauth_consumer_key=" + twitter_consumer_key + "&oauth_nonce=" + oauth_nonce + "&oauth_signature_method=" + oauth_signature_method + 
-		"&oauth_timestamp=" + oauth_timestamp + "&oauth_token=" + encode(oauth_token) + "&oauth_version=1.0&q=" + encode(q) + "&result_type=mixed";	
-	System.out.println("parameter_string=" + parameter_string);
-	String twitter_endpoint = "https://api.twitter.com/1.1/search/tweets.json";
-	String twitter_endpoint_host = "api.twitter.com";
-	String twitter_endpoint_path = "/1.1/search/tweets.json";
-	String signature_base_string = get_or_post + "&"+ encode(twitter_endpoint) + "&" + encode(parameter_string);
-	System.out.println("signature_base_string=" + signature_base_string);
-	
-	// this time the base string is signed using twitter_consumer_secret + "&" + encode(oauth_token_secret) instead of just twitter_consumer_secret + "&"
-	String oauth_signature = "";
-	try {
-		oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  // note the & at the end. Normally the user access_token would go here, but we don't know it yet for request_token
-	} catch (GeneralSecurityException e) {
-		e.printStackTrace();
-	}
-	catch (UnsupportedEncodingException e) {
-		e.printStackTrace();
-	}
-	
-	String authorization_header_string = "OAuth oauth_consumer_key=\"" + twitter_consumer_key + "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + oauth_timestamp + 
-			"\",oauth_nonce=\"" + oauth_nonce + "\",oauth_version=\"1.0\",oauth_signature=\"" + encode(oauth_signature) + "\",oauth_token=\"" + encode(oauth_token) + "\"";
-	System.out.println("authorization_header_string=" + authorization_header_string);
+		// the parameter string must be in alphabetical order
+		// this time, I add 3 extra params to the request, "lang", "result_type" and "q".
+		String parameter_string = "lang=en&oauth_consumer_key=" + twitter_consumer_key + "&oauth_nonce=" + oauth_nonce + "&oauth_signature_method=" + oauth_signature_method + 
+			"&oauth_timestamp=" + oauth_timestamp + "&oauth_token=" + encode(oauth_token) + "&oauth_version=1.0&q=" + encode(q) + "&result_type=mixed";	
+		System.out.println("parameter_string=" + parameter_string);
+		String twitter_endpoint = "https://api.twitter.com/1.1/search/tweets.json";
+		String twitter_endpoint_host = "api.twitter.com";
+		String twitter_endpoint_path = "/1.1/search/tweets.json";
+		String signature_base_string = get_or_post + "&"+ encode(twitter_endpoint) + "&" + encode(parameter_string);
+		System.out.println("signature_base_string=" + signature_base_string);
+		
+		// this time the base string is signed using twitter_consumer_secret + "&" + encode(oauth_token_secret) instead of just twitter_consumer_secret + "&"
+		String oauth_signature = "";
+		try {
+			oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  // note the & at the end. Normally the user access_token would go here, but we don't know it yet for request_token
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		}
+		catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		
+		String authorization_header_string = "OAuth oauth_consumer_key=\"" + twitter_consumer_key + "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + oauth_timestamp + 
+				"\",oauth_nonce=\"" + oauth_nonce + "\",oauth_version=\"1.0\",oauth_signature=\"" + encode(oauth_signature) + "\",oauth_token=\"" + encode(oauth_token) + "\"";
+		System.out.println("authorization_header_string=" + authorization_header_string);
 
 
-	 HttpParams params = new SyncBasicHttpParams();
-	 HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-	 HttpProtocolParams.setContentCharset(params, "UTF-8");
-	 HttpProtocolParams.setUserAgent(params, "HttpCore/1.1");
-	 HttpProtocolParams.setUseExpectContinue(params, false);
+		 HttpParams params = new SyncBasicHttpParams();
+		 HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+		 HttpProtocolParams.setContentCharset(params, "UTF-8");
+		 HttpProtocolParams.setUserAgent(params, "HttpCore/1.1");
+		 HttpProtocolParams.setUseExpectContinue(params, false);
 
-	 HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
-                // Required protocol interceptors
-                new RequestContent(),
-                new RequestTargetHost(),
-                // Recommended protocol interceptors
-                new RequestConnControl(),
-                new RequestUserAgent(),
-                new RequestExpectContinue()});
+		 HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
+	                // Required protocol interceptors
+	                new RequestContent(),
+	                new RequestTargetHost(),
+	                // Recommended protocol interceptors
+	                new RequestConnControl(),
+	                new RequestUserAgent(),
+	                new RequestExpectContinue()});
 
-	 HttpRequestExecutor httpexecutor = new HttpRequestExecutor();
-	 HttpContext context = new BasicHttpContext(null);
-	 HttpHost host = new HttpHost(twitter_endpoint_host,443);
-	 DefaultHttpClientConnection conn = new DefaultHttpClientConnection();
+		 HttpRequestExecutor httpexecutor = new HttpRequestExecutor();
+		 HttpContext context = new BasicHttpContext(null);
+		 HttpHost host = new HttpHost(twitter_endpoint_host,443);
+		 DefaultHttpClientConnection conn = new DefaultHttpClientConnection();
 
-	 context.setAttribute(ExecutionContext.HTTP_CONNECTION, conn);
-	 context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, host);
+		 context.setAttribute(ExecutionContext.HTTP_CONNECTION, conn);
+		 context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, host);
 
-	 try {
 		 try {
-			 SSLContext sslcontext = SSLContext.getInstance("TLS");
-			 sslcontext.init(null, null, null);
-			 SSLSocketFactory ssf = sslcontext.getSocketFactory();
-			 Socket socket = ssf.createSocket();
-			 socket.connect(
-			   new InetSocketAddress(host.getHostName(), host.getPort()), 0);
-			 conn.bind(socket, params);
-			 
-			 // the following line adds 3 params to the request just as the parameter string did above. They must match up or the request will fail.
-			 BasicHttpEntityEnclosingRequest request2 = new BasicHttpEntityEnclosingRequest("GET", twitter_endpoint_path + "?lang=en&result_type=mixed&q=" + encode(q));
-			 request2.setParams(params);
-			 request2.addHeader("Authorization", authorization_header_string); // always add the Authorization header
-			 httpexecutor.preProcess(request2, httpproc, context);
-			 HttpResponse response2 = httpexecutor.execute(request2, conn, context);
-			 response2.setParams(params);
-			 httpexecutor.postProcess(response2, httpproc, context);
+			 try {
+				 SSLContext sslcontext = SSLContext.getInstance("TLS");
+				 sslcontext.init(null, null, null);
+				 SSLSocketFactory ssf = sslcontext.getSocketFactory();
+				 Socket socket = ssf.createSocket();
+				 socket.connect(
+				   new InetSocketAddress(host.getHostName(), host.getPort()), 0);
+				 conn.bind(socket, params);
+				 
+				 // the following line adds 3 params to the request just as the parameter string did above. They must match up or the request will fail.
+				 BasicHttpEntityEnclosingRequest request2 = new BasicHttpEntityEnclosingRequest("GET", twitter_endpoint_path + "?lang=en&result_type=mixed&q=" + encode(q));
+				 request2.setParams(params);
+				 request2.addHeader("Authorization", authorization_header_string); // always add the Authorization header
+				 httpexecutor.preProcess(request2, httpproc, context);
+				 HttpResponse response2 = httpexecutor.execute(request2, conn, context);
+				 response2.setParams(params);
+				 httpexecutor.postProcess(response2, httpproc, context);
 
-			 if(response2.getStatusLine().toString().indexOf("500") != -1)
-			 {
-				 jsonresponse.put("response_status", "error");
-				 jsonresponse.put("message", "Twitter auth error.");
-			 }
-			 else
-			 {
-				 // if successful, the response should be a JSONObject of tweets
-				 JSONObject jo = new JSONObject(EntityUtils.toString(response2.getEntity()));
-				 if(jo.has("errors"))
+				 if(response2.getStatusLine().toString().indexOf("500") != -1)
 				 {
 					 jsonresponse.put("response_status", "error");
-					 String message_from_twitter = jo.getJSONArray("errors").getJSONObject(0).getString("message");
-					 if(message_from_twitter.equals("Invalid or expired token") || message_from_twitter.equals("Could not authenticate you"))
-						 jsonresponse.put("message", "Twitter auth error.");
-					 else
-						 jsonresponse.put("message", jo.getJSONArray("errors").getJSONObject(0).getString("message"));
+					 jsonresponse.put("message", "Twitter auth error.");
 				 }
 				 else
 				 {
-					 jsonresponse.put("twitter_jo", jo); // this is the full result object from Twitter
-				 }
+					 // if successful, the response should be a JSONObject of tweets
+					 JSONObject jo = new JSONObject(EntityUtils.toString(response2.getEntity()));
+					 if(jo.has("errors"))
+					 {
+						 jsonresponse.put("response_status", "error");
+						 String message_from_twitter = jo.getJSONArray("errors").getJSONObject(0).getString("message");
+						 if(message_from_twitter.equals("Invalid or expired token") || message_from_twitter.equals("Could not authenticate you"))
+							 jsonresponse.put("message", "Twitter auth error.");
+						 else
+							 jsonresponse.put("message", jo.getJSONArray("errors").getJSONObject(0).getString("message"));
+					 }
+					 else
+					 {
+						 jsonresponse.put("twitter_jo", jo); // this is the full result object from Twitter
+					 }
+					 
+					 conn.close();
+				 }   
+			 }
+			 catch(HttpException he) 
+			 {	
+				 System.out.println(he.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "searchTweets HttpException message=" + he.getMessage());
+			 } 
+			 catch(NoSuchAlgorithmException nsae) 
+			 {	
+				 System.out.println(nsae.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "searchTweets NoSuchAlgorithmException message=" + nsae.getMessage());
+			 } 					
+			 catch(KeyManagementException kme) 
+			 {	
+				 System.out.println(kme.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "searchTweets KeyManagementException message=" + kme.getMessage());
+			 } 	
+			 finally {
+				 conn.close();
+			 }
+		 } 
+		 catch(JSONException jsone)
+		 {
+			 
+		 }
+		 catch(IOException ioe)
+		 {
+			 
+		 }
+		 return jsonresponse;
+	}
+	
+	// This is the update status example
+	// Urls (even short ones) will be wrapped and be counted as a certain length defined by Twitter configuration (~22 chars as of this writing). There is a 140 char max, including this limitation
+	// INPUT:the user's access_token and the user's access_token_secret and the text of the status update
+	// OUTPUT: if successful, the tweet gets posted.
+		
+	public JSONObject updateTwitterStatus(String access_token, String access_token_secret, String text)
+	{
+		JSONObject jsonresponse = new JSONObject();
+		
+		String oauth_token = access_token;
+		String oauth_token_secret = access_token_secret;
+
+		// generate authorization header
+		String get_or_post = "GET";
+		String oauth_signature_method = "HMAC-SHA1";
+		
+		String uuid_string = UUID.randomUUID().toString();
+		uuid_string = uuid_string.replaceAll("-", "");
+		String oauth_nonce = uuid_string; // any relatively random alphanumeric string will work here
+		
+		// get the timestamp
+		Calendar tempcal = Calendar.getInstance();
+		long ts = tempcal.getTimeInMillis();// get current time in milliseconds
+		String oauth_timestamp = (new Long(ts/1000)).toString(); // then divide by 1000 to get seconds
+		
+		// the parameter string must be in alphabetical order, "text" parameter added at end
+		String parameter_string = "oauth_consumer_key=" + twitter_consumer_key + "&oauth_nonce=" + oauth_nonce + "&oauth_signature_method=" + oauth_signature_method + 
+		    		"&oauth_timestamp=" + oauth_timestamp + "&oauth_token=" + encode(oauth_token) + "&oauth_version=1.0&status=" + encode(text);	
+		System.out.println("parameter_string=" + parameter_string);
+		
+		String twitter_endpoint = "https://api.twitter.com/1.1/statuses/update.json";
+		String twitter_endpoint_host = "api.twitter.com";
+		String twitter_endpoint_path = "/1.1/statuses/update.json";
+		String signature_base_string = get_or_post + "&"+ encode(twitter_endpoint) + "&" + encode(parameter_string);
+		System.out.println("signature_base_string=" + signature_base_string);
+	    String oauth_signature = "";
+	    try {
+	    	oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  // note the & at the end. Normally the user access_token would go here, but we don't know it yet for request_token
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		}
+	    catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	    String authorization_header_string = "OAuth oauth_consumer_key=\"" + twitter_consumer_key + "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + oauth_timestamp + 
+	    		"\",oauth_nonce=\"" + oauth_nonce + "\",oauth_version=\"1.0\",oauth_signature=\"" + encode(oauth_signature) + "\",oauth_token=\"" + encode(oauth_token) + "\"";
+	    System.out.println("authorization_header_string=" + authorization_header_string);
+		
+		
+	    HttpParams params = new SyncBasicHttpParams();
+	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+	    HttpProtocolParams.setContentCharset(params, "UTF-8");
+	    HttpProtocolParams.setUserAgent(params, "HttpCore/1.1");
+	    HttpProtocolParams.setUseExpectContinue(params, false);	
+	    HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
+	                // Required protocol interceptors
+	                new RequestContent(),
+	                new RequestTargetHost(),
+	                // Recommended protocol interceptors
+	                new RequestConnControl(),
+	                new RequestUserAgent(),
+	                new RequestExpectContinue()});
+
+		 HttpRequestExecutor httpexecutor = new HttpRequestExecutor();
+		 HttpContext context = new BasicHttpContext(null);
+		 HttpHost host = new HttpHost(twitter_endpoint_host,443);
+		 DefaultHttpClientConnection conn = new DefaultHttpClientConnection();
+
+		 context.setAttribute(ExecutionContext.HTTP_CONNECTION, conn);
+		 context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, host);
+
+		 try 
+		 {
+			 try 
+			 {
+				 SSLContext sslcontext = SSLContext.getInstance("TLS");
+				 sslcontext.init(null, null, null);
+				 SSLSocketFactory ssf = sslcontext.getSocketFactory();
+				 Socket socket = ssf.createSocket();
+				 socket.connect(
+				   new InetSocketAddress(host.getHostName(), host.getPort()), 0);
+				 conn.bind(socket, params);
+				 BasicHttpEntityEnclosingRequest request2 = new BasicHttpEntityEnclosingRequest("POST", twitter_endpoint_path);
+				 // need to add status parameter to this POST
+				 request2.setEntity( new StringEntity("status=" + encode(text), "application/x-www-form-urlencoded", "UTF-8"));
+				 request2.setParams(params);
+				 request2.addHeader("Authorization", authorization_header_string);
+				 httpexecutor.preProcess(request2, httpproc, context);
+				 HttpResponse response2 = httpexecutor.execute(request2, conn, context);
+				 response2.setParams(params);
+				 httpexecutor.postProcess(response2, httpproc, context);
+				 
+				 // error checking here. Otherwise, status should be updated.
 				 
 				 conn.close();
 			 }   
-		 }
-		 catch(HttpException he) 
-		 {	
-			 System.out.println(he.getMessage());
-			 jsonresponse.put("response_status", "error");
-			 jsonresponse.put("message", "searchTweets HttpException message=" + he.getMessage());
+			 catch(HttpException he) 
+			 {	
+				 System.out.println(he.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "updateTwitterStatus HttpException message=" + he.getMessage());
+			 } 
+			 catch(NoSuchAlgorithmException nsae) 
+			 {	
+				 System.out.println(nsae.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "updateTwitterStatus NoSuchAlgorithmException message=" + nsae.getMessage());
+			 } 					
+			 catch(KeyManagementException kme) 
+			 {	
+				 System.out.println(kme.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "updateTwitterStatus KeyManagementException message=" + kme.getMessage());
+			 } 	
+			 finally 
+			 {
+				 conn.close();
+			 }	
 		 } 
-		 catch(NoSuchAlgorithmException nsae) 
-		 {	
-			 System.out.println(nsae.getMessage());
-			 jsonresponse.put("response_status", "error");
-			 jsonresponse.put("message", "searchTweets NoSuchAlgorithmException message=" + nsae.getMessage());
-		 } 					
-		 catch(KeyManagementException kme) 
-		 {	
-			 System.out.println(kme.getMessage());
-			 jsonresponse.put("response_status", "error");
-			 jsonresponse.put("message", "searchTweets KeyManagementException message=" + kme.getMessage());
-		 } 	
-		 finally {
-			 conn.close();
+		 catch(JSONException jsone)
+		 {
+			 
 		 }
-	 } 
-	 catch(JSONException jsone)
-	 {
-		 
-	 }
-	 catch(IOException ioe)
-	 {
-		 
-	 }
-	 return jsonresponse;
-}
-	
-	
-public JSONObject updateTwitterStatus(String access_token, String access_token_secret, String text)
-{
-	JSONObject jsonresponse = new JSONObject();
-	
-	String oauth_token = access_token;
-	String oauth_token_secret = access_token_secret;
-
-	// generate authorization header
-	String get_or_post = "GET";
-	String oauth_signature_method = "HMAC-SHA1";
-	
-	String uuid_string = UUID.randomUUID().toString();
-	uuid_string = uuid_string.replaceAll("-", "");
-	String oauth_nonce = uuid_string; // any relatively random alphanumeric string will work here
-	
-	// get the timestamp
-	Calendar tempcal = Calendar.getInstance();
-	long ts = tempcal.getTimeInMillis();// get current time in milliseconds
-	String oauth_timestamp = (new Long(ts/1000)).toString(); // then divide by 1000 to get seconds
-	
-	// the parameter string must be in alphabetical order, "text" parameter added at end
-	String parameter_string = "oauth_consumer_key=" + twitter_consumer_key + "&oauth_nonce=" + oauth_nonce + "&oauth_signature_method=" + oauth_signature_method + 
-	    		"&oauth_timestamp=" + oauth_timestamp + "&oauth_token=" + encode(oauth_token) + "&oauth_version=1.0&status=" + encode(text);	
-	System.out.println("parameter_string=" + parameter_string);
-	
-	String twitter_endpoint = "https://api.twitter.com/1.1/statuses/update.json";
-	String twitter_endpoint_host = "api.twitter.com";
-	String twitter_endpoint_path = "/1.1/statuses/update.json";
-	String signature_base_string = get_or_post + "&"+ encode(twitter_endpoint) + "&" + encode(parameter_string);
-	System.out.println("signature_base_string=" + signature_base_string);
-    String oauth_signature = "";
-    try {
-    	oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  // note the & at the end. Normally the user access_token would go here, but we don't know it yet for request_token
-	} catch (GeneralSecurityException e) {
-		e.printStackTrace();
-	}
-    catch (UnsupportedEncodingException e) {
-		e.printStackTrace();
-	}
-    String authorization_header_string = "OAuth oauth_consumer_key=\"" + twitter_consumer_key + "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + oauth_timestamp + 
-    		"\",oauth_nonce=\"" + oauth_nonce + "\",oauth_version=\"1.0\",oauth_signature=\"" + encode(oauth_signature) + "\",oauth_token=\"" + encode(oauth_token) + "\"";
-    System.out.println("authorization_header_string=" + authorization_header_string);
-	
-	
-    HttpParams params = new SyncBasicHttpParams();
-    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-    HttpProtocolParams.setContentCharset(params, "UTF-8");
-    HttpProtocolParams.setUserAgent(params, "HttpCore/1.1");
-    HttpProtocolParams.setUseExpectContinue(params, false);	
-    HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
-                // Required protocol interceptors
-                new RequestContent(),
-                new RequestTargetHost(),
-                // Recommended protocol interceptors
-                new RequestConnControl(),
-                new RequestUserAgent(),
-                new RequestExpectContinue()});
-
-	 HttpRequestExecutor httpexecutor = new HttpRequestExecutor();
-	 HttpContext context = new BasicHttpContext(null);
-	 HttpHost host = new HttpHost(twitter_endpoint_host,443);
-	 DefaultHttpClientConnection conn = new DefaultHttpClientConnection();
-
-	 context.setAttribute(ExecutionContext.HTTP_CONNECTION, conn);
-	 context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, host);
-
-	 try 
-	 {
-		 try 
+		 catch(IOException ioe)
 		 {
-			 SSLContext sslcontext = SSLContext.getInstance("TLS");
-			 sslcontext.init(null, null, null);
-			 SSLSocketFactory ssf = sslcontext.getSocketFactory();
-			 Socket socket = ssf.createSocket();
-			 socket.connect(
-			   new InetSocketAddress(host.getHostName(), host.getPort()), 0);
-			 conn.bind(socket, params);
-			 BasicHttpEntityEnclosingRequest request2 = new BasicHttpEntityEnclosingRequest("POST", twitter_endpoint_path);
-			 // need to add status parameter to this POST
-			 request2.setEntity( new StringEntity("status=" + encode(text), "application/x-www-form-urlencoded", "UTF-8"));
-			 request2.setParams(params);
-			 request2.addHeader("Authorization", authorization_header_string);
-			 httpexecutor.preProcess(request2, httpproc, context);
-			 HttpResponse response2 = httpexecutor.execute(request2, conn, context);
-			 response2.setParams(params);
-			 httpexecutor.postProcess(response2, httpproc, context);
 			 
-			 // error checking here. Otherwise, status should be updated.
-			 
-			 conn.close();
-		 }   
-		 catch(HttpException he) 
-		 {	
-			 System.out.println(he.getMessage());
-			 jsonresponse.put("response_status", "error");
-			 jsonresponse.put("message", "updateTwitterStatus HttpException message=" + he.getMessage());
-		 } 
-		 catch(NoSuchAlgorithmException nsae) 
-		 {	
-			 System.out.println(nsae.getMessage());
-			 jsonresponse.put("response_status", "error");
-			 jsonresponse.put("message", "updateTwitterStatus NoSuchAlgorithmException message=" + nsae.getMessage());
-		 } 					
-		 catch(KeyManagementException kme) 
-		 {	
-			 System.out.println(kme.getMessage());
-			 jsonresponse.put("response_status", "error");
-			 jsonresponse.put("message", "updateTwitterStatus KeyManagementException message=" + kme.getMessage());
-		 } 	
-		 finally 
-		 {
-			 conn.close();
-		 }	
-	 } 
-	 catch(JSONException jsone)
-	 {
-		 
-	 }
-	 catch(IOException ioe)
-	 {
-		 
-	 }
-	 return jsonresponse;
-}
+		 }
+		 return jsonresponse;
+	}
 	
 	
 	public static void main(String[] args) {
