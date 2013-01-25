@@ -55,7 +55,7 @@ import org.json.JSONObject;
  *----------------------------------------------------------------------                                                       
  *   While you're struggling to get this working, I highly recommend three things:
  *   
- *   1. First, use HTTP, not HTTPS so you can see what you're doing
+ *   1. First, use HTTP, not HTTPS so you can see what you're doing, then switch back to HTTPS once it's working
  *   2. Use Fiddler or Wireshark to see your actual requests and the Twitter responses
  *   3. Use the example data from the following address. Get that working first as a baseline, then use your own credentials: 
  *   		https://dev.twitter.com/docs/auth/implementing-sign-twitter
