@@ -44,10 +44,31 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
+/***
+ *    ______ _____  ___ ______   _____ _   _ _____ _____ 
+ *    | ___ \  ___|/ _ \|  _  \ |_   _| | | |_   _/  ___|
+ *    | |_/ / |__ / /_\ \ | | |   | | | |_| | | | \ `--. 
+ *    |    /|  __||  _  | | | |   | | |  _  | | |  `--. \
+ *    | |\ \| |___| | | | |/ /    | | | | | |_| |_/\__/ /
+ *    \_| \_\____/\_| |_/___/     \_/ \_| |_/\___/\____/ 
+ *----------------------------------------------------------------------                                                       
+ *   While you're struggling to get this working, I highly recommend three things:
+ *   
+ *   1. First, use HTTP, not HTTPS so you can see what you're doing
+ *   2. Use Fiddler or Wireshark to see your actual requests and the Twitter responses
+ *   3. Use the example data from the following address. Get that working first as a baseline, then use your own credentials: 
+ *   		https://dev.twitter.com/docs/auth/implementing-sign-twitter
+ *
+ *
 // REQUIRED LIBRARIES
 // Apache commons codec
 // Apache HTTP Core
 // JSON
+ *
+ */
+
+
 
 public class SampleTwitterRequests {
 	
