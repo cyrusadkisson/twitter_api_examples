@@ -1,3 +1,5 @@
+
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -24,6 +26,9 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.DefaultHttpClientConnection;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.params.HttpParams;
@@ -74,7 +79,7 @@ public class SampleTwitterRequests {
 	
 	private String twitter_consumer_key = "YOURCONSUMERKEY";
 	private String twitter_consumer_secret = "YOURCONSUMERSECRET";	
-	
+
 	public String encode(String value) 
 	{
         String encoded = null;
@@ -651,7 +656,7 @@ public class SampleTwitterRequests {
 	// INPUT:the user's access_token and the user's access_token_secret and the text of the status update
 	// OUTPUT: if successful, the tweet gets posted.
 		
-	public JSONObject updateTwitterStatus(String access_token, String access_token_secret, String text)
+	public JSONObject updateStatus(String access_token, String access_token_secret, String text)
 	{
 		JSONObject jsonresponse = new JSONObject();
 		
@@ -683,7 +688,7 @@ public class SampleTwitterRequests {
 		System.out.println("signature_base_string=" + signature_base_string);
 	    String oauth_signature = "";
 	    try {
-	    	oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  // note the & at the end. Normally the user access_token would go here, but we don't know it yet for request_token
+	    	oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  
 		} catch (GeneralSecurityException e) {
 			e.printStackTrace();
 		}
@@ -737,7 +742,8 @@ public class SampleTwitterRequests {
 				 HttpResponse response2 = httpexecutor.execute(request2, conn, context);
 				 response2.setParams(params);
 				 httpexecutor.postProcess(response2, httpproc, context);
-				 
+				 String responseBody = EntityUtils.toString(response2.getEntity());
+				 System.out.println("response=" + responseBody);
 				 // error checking here. Otherwise, status should be updated.
 				 
 				 conn.close();
@@ -746,20 +752,158 @@ public class SampleTwitterRequests {
 			 {	
 				 System.out.println(he.getMessage());
 				 jsonresponse.put("response_status", "error");
-				 jsonresponse.put("message", "updateTwitterStatus HttpException message=" + he.getMessage());
+				 jsonresponse.put("message", "updateStatus HttpException message=" + he.getMessage());
 			 } 
 			 catch(NoSuchAlgorithmException nsae) 
 			 {	
 				 System.out.println(nsae.getMessage());
 				 jsonresponse.put("response_status", "error");
-				 jsonresponse.put("message", "updateTwitterStatus NoSuchAlgorithmException message=" + nsae.getMessage());
+				 jsonresponse.put("message", "updateStatus NoSuchAlgorithmException message=" + nsae.getMessage());
 			 } 					
 			 catch(KeyManagementException kme) 
 			 {	
 				 System.out.println(kme.getMessage());
 				 jsonresponse.put("response_status", "error");
-				 jsonresponse.put("message", "updateTwitterStatus KeyManagementException message=" + kme.getMessage());
+				 jsonresponse.put("message", "updateStatus KeyManagementException message=" + kme.getMessage());
 			 } 	
+			 finally 
+			 {
+				 conn.close();
+			 }	
+		 } 
+		 catch(JSONException jsone)
+		 {
+			 
+		 }
+		 catch(IOException ioe)
+		 {
+			 
+		 }
+		 return jsonresponse;
+	}
+
+	public JSONObject updateStatusWithMedia(String access_token, String access_token_secret, String text, String image_url)
+	{
+		JSONObject jsonresponse = new JSONObject();
+		
+		String oauth_token = access_token;
+		String oauth_token_secret = access_token_secret;
+
+		// generate authorization header
+		String get_or_post = "POST";
+		String oauth_signature_method = "HMAC-SHA1";
+		
+		String uuid_string = UUID.randomUUID().toString();
+		uuid_string = uuid_string.replaceAll("-", "");
+		String oauth_nonce = uuid_string; // any relatively random alphanumeric string will work here
+		
+		// get the timestamp
+		Calendar tempcal = Calendar.getInstance();
+		long ts = tempcal.getTimeInMillis();// get current time in milliseconds
+		String oauth_timestamp = (new Long(ts/1000)).toString(); // then divide by 1000 to get seconds
+		
+		// the parameter string must be in alphabetical order, "text" parameter added at end
+		String parameter_string = "oauth_consumer_key=" + twitter_consumer_key + "&oauth_nonce=" + oauth_nonce + "&oauth_signature_method=" + oauth_signature_method + 
+		    		"&oauth_timestamp=" + oauth_timestamp + "&oauth_token=" + encode(oauth_token) + "&oauth_version=1.0";//&status=" + encode(text);	
+		System.out.println("parameter_string=" + parameter_string);
+		
+		String twitter_endpoint = "http://api.twitter.com/1.1/statuses/update_with_media.json";
+		String twitter_endpoint_host = "api.twitter.com";
+		String twitter_endpoint_path = "/1.1/statuses/update_with_media.json";
+		String signature_base_string = get_or_post + "&"+ encode(twitter_endpoint) + "&" + encode(parameter_string);
+		System.out.println("signature_base_string=" + signature_base_string);
+	    String oauth_signature = "";
+	    try {
+	    	oauth_signature = computeSignature(signature_base_string, twitter_consumer_secret + "&" + encode(oauth_token_secret));  
+		} catch (GeneralSecurityException e) {
+			e.printStackTrace();
+		}
+	    catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+	    String authorization_header_string = "OAuth oauth_consumer_key=\"" + twitter_consumer_key + "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + oauth_timestamp + 
+	    		"\",oauth_nonce=\"" + oauth_nonce + "\",oauth_version=\"1.0\",oauth_signature=\"" + encode(oauth_signature) + "\",oauth_token=\"" + encode(oauth_token) + "\"";
+	    System.out.println("authorization_header_string=" + authorization_header_string);
+		
+		
+	    HttpParams params = new SyncBasicHttpParams();
+	    HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+	    HttpProtocolParams.setContentCharset(params, "UTF-8");
+	    HttpProtocolParams.setUserAgent(params, "HttpCore/1.1");
+	    HttpProtocolParams.setUseExpectContinue(params, false);
+	    HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
+	                // Required protocol interceptors
+	                new RequestContent(),
+	                new RequestTargetHost(),
+	                // Recommended protocol interceptors
+	                new RequestConnControl(),
+	                new RequestUserAgent(),
+	                new RequestExpectContinue()});
+
+		 HttpRequestExecutor httpexecutor = new HttpRequestExecutor();
+		 HttpContext context = new BasicHttpContext(null);
+		 HttpHost host = new HttpHost(twitter_endpoint_host,80);
+		 DefaultHttpClientConnection conn = new DefaultHttpClientConnection();
+
+		 context.setAttribute(ExecutionContext.HTTP_CONNECTION, conn);
+		 context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, host);
+
+		 try 
+		 {
+			 try 
+			 {
+				/* SSLContext sslcontext = SSLContext.getInstance("TLS");
+				 sslcontext.init(null, null, null);
+				 SSLSocketFactory ssf = sslcontext.getSocketFactory();
+				 Socket socket = ssf.createSocket();
+				 socket.connect(
+				   new InetSocketAddress(host.getHostName(), host.getPort()), 0);
+				 conn.bind(socket, params);*/
+				 
+				 
+				 Socket socket = new Socket(host.getHostName(), host.getPort());
+				 conn.bind(socket, params);
+				 
+				 BasicHttpEntityEnclosingRequest request2 = new BasicHttpEntityEnclosingRequest("POST", twitter_endpoint_path);
+				 // need to add status parameter to this POST
+				 MultipartEntity reqEntity = new MultipartEntity();
+				 FileBody sb_image = new FileBody(new File(image_url));
+				 StringBody sb_status = new StringBody(text);
+				 reqEntity.addPart("status", sb_status);
+				 reqEntity.addPart("media[]", sb_image);
+				 request2.setEntity(reqEntity);
+				 
+				 //request2.setEntity( new StringEntity("media[]=" + encode(image_url) + "&status=" + encode(text), "multipart/form-data; boundary=---1234", "UTF-8"));
+				 request2.setParams(params);
+				 request2.addHeader("Authorization", authorization_header_string);
+				 httpexecutor.preProcess(request2, httpproc, context);
+				 HttpResponse response2 = httpexecutor.execute(request2, conn, context);
+				 response2.setParams(params);
+				 httpexecutor.postProcess(response2, httpproc, context);
+				 String responseBody = EntityUtils.toString(response2.getEntity());
+				 System.out.println("response=" + responseBody);
+				 // error checking here. Otherwise, status should be updated.
+				 
+				 conn.close();
+			 }   
+			 catch(HttpException he) 
+			 {	
+				 System.out.println(he.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "updateStatus HttpException message=" + he.getMessage());
+			 } 
+			/* catch(NoSuchAlgorithmException nsae) 
+			 {	
+				 System.out.println(nsae.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "updateStatus NoSuchAlgorithmException message=" + nsae.getMessage());
+			 } 					
+			 catch(KeyManagementException kme) 
+			 {	
+				 System.out.println(kme.getMessage());
+				 jsonresponse.put("response_status", "error");
+				 jsonresponse.put("message", "updateStatus KeyManagementException message=" + kme.getMessage());
+			 } 	*/
 			 finally 
 			 {
 				 conn.close();
@@ -779,7 +923,9 @@ public class SampleTwitterRequests {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		
+		SampleTwitterRequests twitter = new SampleTwitterRequests();
+		twitter.updateStatusWithMedia("1137862sadfasdfasdfasdfasdfasdUoK7", "93MasdfasdfasdfasdfasdfasdfasdfasdfasdfasdMBrY", 
+				"test tweet with media", "/path/to/file/20130409_125648.jpg");
 	}
 
 }

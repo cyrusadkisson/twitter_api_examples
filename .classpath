@@ -5,5 +5,6 @@
 	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/json-20080701.jar"/>
 	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/httpcore-4.2.3.jar"/>
+	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/httpmime-4.2.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
