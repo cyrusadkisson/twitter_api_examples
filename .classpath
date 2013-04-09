@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/json-20080701.jar"/>
-	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/openid4java_coredeps/commons-codec-1.3.jar"/>
+	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/commons-codec-1.7.jar"/>
 	<classpathentry kind="lib" path="/home/cyrus/Desktop/libraries/httpcore-4.2.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

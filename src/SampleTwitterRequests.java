@@ -659,7 +659,7 @@ public class SampleTwitterRequests {
 		String oauth_token_secret = access_token_secret;
 
 		// generate authorization header
-		String get_or_post = "GET";
+		String get_or_post = "POST";
 		String oauth_signature_method = "HMAC-SHA1";
 		
 		String uuid_string = UUID.randomUUID().toString();
