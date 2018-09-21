@@ -14,27 +14,28 @@ import java.util.UUID;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONObject;
 
 
-public class A03_GetTweet {
+public class A05_DestroyTweet {
 	
-	private GetExecutionHandler getExecutionHandler;
+	private PostExecutionHandler postExecutionHandler;
 	private UtilsForTwitterAPI utils;
 	
-	public A03_GetTweet()
+	public A05_DestroyTweet()
 	{
-		getExecutionHandler = new GetExecutionHandler();
+		postExecutionHandler = new PostExecutionHandler();
 		utils = new UtilsForTwitterAPI();
 	}	
 
-	public Map<String,String> getTweet(String id)
+	public boolean destroyTweet(String id)
 	{
 		// generate authorization header
-		String get_or_post = "GET";
+		String get_or_post = "POST";
 		String oauth_signature_method = "HMAC-SHA1";
 		
 		String uuid_string = UUID.randomUUID().toString();
@@ -48,10 +49,16 @@ public class A03_GetTweet {
 
 		// the parameter string must be in alphabetical order
 		// this time, I add 3 extra params to the request, "lang", "result_type" and "q".
-		String parameter_string = "id=" + id + "&oauth_consumer_key=" + A00_ConstantsEditMe.twitter_consumer_key + "&oauth_nonce=" + oauth_nonce + "&oauth_signature_method=" + oauth_signature_method + 
-			"&oauth_timestamp=" + oauth_timestamp + "&oauth_token=" + utils.encode(A00_ConstantsEditMe.access_token) + "&oauth_version=1.0";	
-		String twitter_endpoint = "https://api.twitter.com/1.1/statuses/show.json";
-		String signature_base_string = get_or_post + "&"+ utils.encode(twitter_endpoint) + "&" + utils.encode(parameter_string);
+		String parameter_string = 
+				//"id=" + id + "&" +  // this is not a "parameter" in the HTTP sense (i.e. it does not come after the ? in the query string nor as a post param. It is just part of the base URL. Twitter's docs are confusing on this.)
+				"oauth_consumer_key=" + A00_ConstantsEditMe.twitter_consumer_key + "&" + 
+				"oauth_nonce=" + oauth_nonce + "&" +
+				"oauth_signature_method=" + oauth_signature_method + "&" + 
+				"oauth_timestamp=" + oauth_timestamp + "&" +
+				"oauth_token=" + utils.encode(A00_ConstantsEditMe.access_token) + "&" + 
+				"oauth_version=1.0";	
+		String base_url = "https://api.twitter.com/1.1/statuses/destroy/" + id + ".json";
+		String signature_base_string = get_or_post + "&"+ utils.encode(base_url) + "&" + utils.encode(parameter_string);
 		
 		// this time the base string is signed using twitter_consumer_secret + "&" + encode(oauth_token_secret) instead of just twitter_consumer_secret + "&"
 		String oauth_signature = "";
@@ -67,11 +74,10 @@ public class A03_GetTweet {
 		String authorization_header_string = "OAuth oauth_consumer_key=\"" + A00_ConstantsEditMe.twitter_consumer_key + "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + oauth_timestamp + 
 				"\",oauth_nonce=\"" + oauth_nonce + "\",oauth_version=\"1.0\",oauth_signature=\"" + utils.encode(oauth_signature) + "\",oauth_token=\"" + utils.encode(A00_ConstantsEditMe.access_token) + "\"";
 		    
-		String url = twitter_endpoint; 
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
 		CloseableHttpClient httpclient = httpClientBuilder.build();
-		HttpGet httpGet = null; 
-		httpGet = new HttpGet(url + "?id=" + id);
+		HttpPost httpPost = null; 
+		httpPost = new HttpPost(base_url);
 
 		List<NameValuePair> headers = new ArrayList<NameValuePair>();	 										// create an empty list
 		NameValuePair authorizationPair = new BasicNameValuePair("Authorization", authorization_header_string);	// add the "Authorization" header with the string created above.
@@ -84,13 +90,13 @@ public class A03_GetTweet {
 		{
 			current = header_it.next();
 			System.out.println("Adding header " + current.getName() + ":" + current.getValue());
-			httpGet.setHeader(current.getName(), current.getValue());
+			httpPost.setHeader(current.getName(), current.getValue());
 		}
 
 		// print request as we have it so far
 		System.out.println("\n**************");
-		System.out.println(httpGet.getRequestLine());
-		Header[] headers2 = httpGet.getAllHeaders();
+		System.out.println(httpPost.getRequestLine());
+		Header[] headers2 = httpPost.getAllHeaders();
 		int h = 0;
 		while(h < headers2.length)
 		{
@@ -99,9 +105,9 @@ public class A03_GetTweet {
 		}
 		System.out.println("\n**************");
 		
-		HttpGetTriad triad = null;
+		HttpPostTriad triad = null;
 		try {
-			triad = getExecutionHandler.doExecution(httpclient, httpGet);
+			triad = postExecutionHandler.doExecution(httpclient, httpPost);
 		} catch (ClientProtocolException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -110,22 +116,31 @@ public class A03_GetTweet {
 			e.printStackTrace();
 		}
 		
-		Map<String,String> responseMap = new HashMap<String,String>();
-		
 		if(triad == null || triad.getResponseString() == null)
+		{
 			System.out.println("triad or triad.getResponseString() was null. Suppressing response squelch.");
+			return false;
+		}
 		else
 		{
 			System.out.println("response string:" + triad.getResponseString());
+			JSONObject response = new JSONObject(triad.getResponseString());
+			System.out.println(response);
+			if(response.has("error"))
+			{
+				return false;
+			}
+			else
+			{
+				return true;
+			}
 		}
-		
-		return responseMap;
 	}
 	
 	public static void main(String[] args) {
 
-		A03_GetTweet getTweet = new A03_GetTweet();
-		Map<String,String> responseMap = getTweet.getTweet("1023240131371847681"); //access_token and access_token_secret should be pasted into A00_ConstantsEditMe for this
+		A05_DestroyTweet tweetDestroyer = new A05_DestroyTweet();
+		boolean destroyed = tweetDestroyer.destroyTweet("1042982550476664832"); //access_token and access_token_secret should be pasted into A00_ConstantsEditMe for this
 	}
 
 }
