@@ -125,7 +125,7 @@ public class A04_GetTweet {
 	public static void main(String[] args) {
 
 		A04_GetTweet getTweet = new A04_GetTweet();
-		Map<String,String> responseMap = getTweet.getTweet("1042982550476664832"); //access_token and access_token_secret should be pasted into A00_ConstantsEditMe for this
+		Map<String,String> responseMap = getTweet.getTweet("1065962440951762944"); //access_token and access_token_secret should be pasted into A00_ConstantsEditMe for this
 	}
 
 }

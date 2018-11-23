@@ -2,7 +2,7 @@ package net.adkitech;
 
 public class A00_ConstantsEditMe {
 	
-	// FIRST, set up your app in Twitter. These two bits of info will be generated for you. Paste them here before running anything.
+	// FIRST, set up your app at apps.twitter.com. These two bits of info will be generated for you. Paste them here before running anything.
 	public static String twitter_consumer_key = "";
 	public static String twitter_consumer_secret = "";
 	
